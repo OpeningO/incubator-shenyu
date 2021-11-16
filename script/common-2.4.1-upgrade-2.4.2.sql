@@ -61,11 +61,6 @@ UPDATE resource SET perms = REPLACE(perms, 'cryptor_r', 'cryptorR') WHERE perms 
 UPDATE resource SET perms = REPLACE(perms, 'modifyResponse', 'modifyResponse') WHERE perms LIKE 'plugin:modify_response%';
 UPDATE resource SET perms = REPLACE(perms, 'param_mapping', 'paramMapping') WHERE perms LIKE 'plugin:param_mapping%';
 
--- update plugin_handle id to bigint
-ALTER TABLE plugin_handle MODIFY COLUMN id BIGINT unsigned NOT NULL AUTO_INCREMENT;
--- update shenyu_dict id to bigint
-ALTER TABLE shenyu_dict MODIFY COLUMN id BIGINT unsigned NOT NULL AUTO_INCREMENT;
-
 -- add dubbo multiSelectorHandle
 INSERT IGNORE INTO plugin_handle (plugin_id, field, label, data_type, type, sort, ext_obj, date_created, date_updated) VALUES ('6', 'multiSelectorHandle', 'multiSelectorHandle', '3', '3', '0', NULL, '2021-03-08 13:18:44', '2021-03-09 10:32:51');
 
