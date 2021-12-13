@@ -78,21 +78,24 @@ public final class XmlUtils {
         if (StringUtils.isBlank(xml)) {
             return map;
         }
+        String data = xml;
+        if (xml.startsWith("<>") && xml.endsWith("</>")) {
+            data = xml.substring("<>".length(), xml.length() - "</>".length());
+        }
         // invalid xml
         try {
-            MAPPER.readValue(xml, Object.class);
+            MAPPER.readValue(data, Object.class);
         } catch (JsonProcessingException e) {
             return map;
         }
 
-        String data = xml;
         String rootName = root;
         if (StringUtils.isBlank(root)) {
             rootName = Constants.DEFAULT_XML_ROOT;
         }
-        if (!(xml.startsWith(String.format("<%s>", rootName))
-                && xml.endsWith(String.format("</%s>", rootName)))) {
-            data = String.format("<%s>%s</%s>", rootName, xml, rootName);
+        if (!(data.startsWith(String.format("<%s>", rootName))
+                && data.endsWith(String.format("</%s>", rootName)))) {
+            data = String.format("<%s>%s</%s>", rootName, data, rootName);
         }
         try {
             return MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {

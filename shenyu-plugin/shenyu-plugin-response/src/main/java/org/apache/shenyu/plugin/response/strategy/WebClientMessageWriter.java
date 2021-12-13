@@ -55,7 +55,10 @@ public class WebClientMessageWriter implements MessageWriter {
             response.getCookies().putAll(clientResponse.cookies());
             response.getHeaders().putAll(clientResponse.headers().asHttpHeaders());
             clientResponse = ResponseUtils.buildClientResponse(exchange.getResponse(), clientResponse.body(BodyExtractors.toDataBuffers()));
-            return clientResponse.bodyToMono(String.class).flatMap(originData -> WebFluxResultUtils.result(exchange, originData));
+            return clientResponse.bodyToMono(String.class)
+                    .flatMap(originData -> WebFluxResultUtils.result(exchange, originData))
+                    .doOnCancel(() -> clean(exchange))
+                    .doFinally(ret -> ShenyuResultWrap.shenyuResult().clear());
         }));
     }
 

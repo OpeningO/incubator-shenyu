@@ -66,6 +66,8 @@ public final class WebFluxResultUtils {
         String json;
         String data;
         final ShenyuResult<?> shenyuResult = ShenyuResultWrap.shenyuResult();
+        // reset the map.
+        shenyuResult.clear();
         if (dataFormat.isXml()) {
             // was xml
             if (XmlUtils.isValidXml(data = result.toString())) {
@@ -91,8 +93,6 @@ public final class WebFluxResultUtils {
             // the format is json, but the upstream is xml data. convert the xml to json.
             data = getJsonDataByXml(shenyuResult, data);
         }
-        // reset the map.
-        shenyuResult.clear();
         return writeWith(exchange, dataFormat.getMediaType(), data);
     }
 
