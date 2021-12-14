@@ -36,6 +36,9 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The type Shenyu result utils.
@@ -65,9 +68,7 @@ public final class WebFluxResultUtils {
         }
         String json;
         String data;
-        final ShenyuResult<?> shenyuResult = ShenyuResultWrap.shenyuResult();
-        // reset the map.
-        shenyuResult.clear();
+        final String root = getXmlRoot();
         if (dataFormat.isXml()) {
             // was xml
             if (XmlUtils.isValidXml(data = result.toString())) {
@@ -79,7 +80,7 @@ public final class WebFluxResultUtils {
                 return writeWith(exchange, MediaType.TEXT_PLAIN, data);
             }
             // the format is xml, but the upstream is json data. convert the json to xml.
-            data = getXmlDataByJson(shenyuResult, json);
+            data = getXmlDataByJson(root, json);
         } else {
             // was json
             if (GsonUtils.isValidJson(json = result.toString())
@@ -91,7 +92,7 @@ public final class WebFluxResultUtils {
                 return writeWith(exchange, MediaType.TEXT_PLAIN, data);
             }
             // the format is json, but the upstream is xml data. convert the xml to json.
-            data = getJsonDataByXml(shenyuResult, data);
+            data = getJsonDataByXml(root, data);
         }
         return writeWith(exchange, dataFormat.getMediaType(), data);
     }
@@ -139,57 +140,76 @@ public final class WebFluxResultUtils {
     /**
      * Gets xml data.
      *
-     * @param shenyuResult the shenyu result
+     * @param root the xml root
      * @param json the json
      * @return xml data
      */
-    private static String getXmlDataByJson(final ShenyuResult<?> shenyuResult, final String json) {
-        String data = getData(shenyuResult, json);
-        // default error xml.
-        if (Objects.isNull(data)) {
-            // reset the map.
-            shenyuResult.clear();
-            // generate default xml error data
-            final Object defaultError = shenyuResult.error(
-                    ShenyuResultEnum.INVALID_XML_DATA.getCode(),
-                    ShenyuResultEnum.INVALID_XML_DATA.getMsg(), null);
-            data = getData(shenyuResult, GsonUtils.getInstance().toJson(defaultError));
-        }
-        return data;
-    }
-
-    /**
-     * Gets data.
-     *
-     * @param shenyuResult the shenyu result
-     * @param data the data
-     * @return wapper data
-     */
-    private static String getData(final ShenyuResult<?> shenyuResult, final String data) {
-        shenyuResult.putAll(GsonUtils.getInstance().convertToMap(data));
-        return XmlUtils.toXml(shenyuResult);
+    private static String getXmlDataByJson(final String root, final String json) {
+        return XmlUtils.toXml(new DataContainer(GsonUtils.getInstance().convertToMap(json))).replace("DataContainer", root);
     }
 
     /**
      * Gets json data.
      *
-     * @param shenyuResult the shenyu result
+     * @param root the xml root
      * @param xml the xml
      * @return json data
      */
-    private static String getJsonDataByXml(final ShenyuResult<?> shenyuResult, final String xml) {
+    private static String getJsonDataByXml(final String root, final String xml) {
         String data = Constants.EMPTY_JSON;
         if (StringUtils.isNotBlank(xml)) {
-            final Class<?> shenyuResultClass = shenyuResult.getClass();
-            String root = Constants.DEFAULT_XML_ROOT;
-            if (shenyuResultClass.isAnnotationPresent(JacksonXmlRootElement.class)) {
-                root = shenyuResultClass.getAnnotation(JacksonXmlRootElement.class).localName();
-            }
             final Map<String, Object> xmlMap = XmlUtils.toMap(xml, root);
             if (MapUtils.isNotEmpty(xmlMap)) {
                 data = GsonUtils.getInstance().toJson(xmlMap);
             }
         }
         return data;
+    }
+
+    /**
+     * Gets xml root.
+     *
+     * @return the xml root.
+     */
+    private static String getXmlRoot() {
+        final ShenyuResult<?> shenyuResult = ShenyuResultWrap.shenyuResult();
+        final Class<?> shenyuResultClass = shenyuResult.getClass();
+        String root = Constants.DEFAULT_XML_ROOT;
+        if (shenyuResultClass.isAnnotationPresent(JacksonXmlRootElement.class)) {
+            root = shenyuResultClass.getAnnotation(JacksonXmlRootElement.class).localName();
+        }
+        return root;
+    }
+
+    /**
+     * Data Container.
+     */
+    private static class DataContainer extends ConcurrentHashMap<String, Object> {
+
+        /**
+         * the data container constructor.
+         *
+         * @param m init map
+         */
+        public DataContainer(final Map<? extends String, ?> m) {
+            super(m);
+        }
+
+        /**
+         * put all data and skip the null data.
+         *
+         * @param m the putting data
+         */
+        @Override
+        public void putAll(final Map<? extends String, ?> m) {
+            Optional.ofNullable(m).ifPresent(map -> {
+                final Object[] value = {new AtomicReference<>()};
+                map.keySet().stream().filter(Objects::nonNull).forEach(key -> {
+                    if (Objects.nonNull(value[0] = m.get(key))) {
+                        put(key, value[0]);
+                    }
+                });
+            });
+        }
     }
 }

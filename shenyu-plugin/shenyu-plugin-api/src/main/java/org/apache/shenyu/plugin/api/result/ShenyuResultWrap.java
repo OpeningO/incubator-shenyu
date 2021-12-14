@@ -27,13 +27,11 @@ public final class ShenyuResultWrap {
     /**
      * Success object.
      *
-     * @param code    the code
-     * @param message the message
      * @param object  the object
      * @return the object
      */
-    public static Object success(final int code, final String message, final Object object) {
-        return shenyuResult().success(code, message, object);
+    public static Object success(final Object object) {
+        return shenyuResult().success(object);
     }
 
     /**

@@ -17,22 +17,20 @@
 
 package org.apache.shenyu.plugin.api.result;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
-import org.apache.shenyu.common.constant.Constants;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 /**
- * The type Shenyu default result.
+ * ShenyuResultFormat.
  */
-@JacksonXmlRootElement(localName = Constants.DEFAULT_XML_ROOT)
-public class DefaultShenyuResult implements ShenyuResult<DefaultShenyuEntity> {
+public interface ShenyuResultFormat {
 
-    @Override
-    public Object success(final Object object) {
-        return object;
-    }
-
-    @Override
-    public DefaultShenyuEntity error(final int code, final String message, final Object object) {
-        return DefaultShenyuEntity.error(code, message, object);
-    }
+    /**
+     * format result.
+     *
+     * @param exchange the exchange
+     * @param result the result
+     * @return the format result
+     */
+    Mono<Void> format(final ServerWebExchange exchange, final Object result);
 }

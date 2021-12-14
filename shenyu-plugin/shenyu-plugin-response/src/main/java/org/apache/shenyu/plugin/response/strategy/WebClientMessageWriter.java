@@ -57,8 +57,7 @@ public class WebClientMessageWriter implements MessageWriter {
             clientResponse = ResponseUtils.buildClientResponse(exchange.getResponse(), clientResponse.body(BodyExtractors.toDataBuffers()));
             return clientResponse.bodyToMono(String.class)
                     .flatMap(originData -> WebFluxResultUtils.result(exchange, originData))
-                    .doOnCancel(() -> clean(exchange))
-                    .doFinally(ret -> ShenyuResultWrap.shenyuResult().clear());
+                    .doOnCancel(() -> clean(exchange));
         }));
     }
 

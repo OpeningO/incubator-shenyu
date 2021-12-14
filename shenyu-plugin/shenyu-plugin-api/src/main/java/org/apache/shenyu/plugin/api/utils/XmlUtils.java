@@ -59,7 +59,7 @@ public final class XmlUtils {
                     && Objects.nonNull(MAPPER.readValue(object.toString(), Object.class))) {
                 return object.toString();
             }
-            return convertToXml(object);
+            return fixXml(convertToXml(object), "", false);
         } catch (IOException e) {
             // the data is invalid xml
             return object.toString();
@@ -78,24 +78,12 @@ public final class XmlUtils {
         if (StringUtils.isBlank(xml)) {
             return map;
         }
-        String data = xml;
-        if (xml.startsWith("<>") && xml.endsWith("</>")) {
-            data = xml.substring("<>".length(), xml.length() - "</>".length());
-        }
+        final String data = fixXml(xml, root, true);
         // invalid xml
         try {
             MAPPER.readValue(data, Object.class);
         } catch (JsonProcessingException e) {
             return map;
-        }
-
-        String rootName = root;
-        if (StringUtils.isBlank(root)) {
-            rootName = Constants.DEFAULT_XML_ROOT;
-        }
-        if (!(data.startsWith(String.format("<%s>", rootName))
-                && data.endsWith(String.format("</%s>", rootName)))) {
-            data = String.format("<%s>%s</%s>", rootName, data, rootName);
         }
         try {
             return MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {
@@ -140,5 +128,35 @@ public final class XmlUtils {
             LOG.warn("write to xml string error: " + object, e);
         }
         return null;
+    }
+
+    /**
+     * fix the xml data.
+     *
+     * @param xml the origin xml
+     * @param root the xml root
+     * @param fixRoot fix root or not
+     * @return fixed xml
+     */
+    private static String fixXml(final String xml, final String root, final boolean fixRoot) {
+        if (StringUtils.isBlank(xml)) {
+            return xml;
+        }
+        String data = xml;
+        if (xml.startsWith("<>") && xml.endsWith("</>")) {
+            data = xml.substring("<>".length(), xml.length() - "</>".length());
+        }
+        if (!fixRoot) {
+            return data;
+        }
+        String rootName = root;
+        if (StringUtils.isBlank(root)) {
+            rootName = Constants.DEFAULT_XML_ROOT;
+        }
+        if (!(data.startsWith(String.format("<%s>", rootName))
+                && data.endsWith(String.format("</%s>", rootName)))) {
+            data = String.format("<%s>%s</%s>", rootName, data, rootName);
+        }
+        return data;
     }
 }

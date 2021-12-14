@@ -170,7 +170,7 @@ public class ShenyuConfigurationTest {
         }
 
         @JacksonXmlRootElement(localName = "root")
-        static class CustomShenyuResult extends ShenyuResult<Object> {
+        static class CustomShenyuResult implements ShenyuResult<Object> {
 
             @Override
             public Object success(final int code, final String message, final Object object) {
